@@ -8,6 +8,7 @@ library(vroom)
 library(patchwork)
 library(DataExplorer)
 library(GGally)
+library(tidymodels)
 
 ## Read in the Data
 bike <- vroom("c://Users/peter/Desktop/BYU School/fall 2023/predictive analytics/KaggleBikeShare/train.csv")
@@ -53,4 +54,10 @@ boxplot(x = bike$weather, y = bike$count)
 
 ## 4 panel layout
 (plot1 + plot2) / (plot3 + plot4) #4 panel plot
+
+
+
+
+
+
 
