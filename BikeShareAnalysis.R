@@ -7,8 +7,7 @@ bike_test <- vroom("./test.csv")
 bike_train <- vroom("./train.csv")
 bike_train <- bike_train %>%
   select(-c('casual','registered'))
-view(bike)
-dplyr::glimpse(bike)
+
 
 ## Create a "recipe"
 my_recipe <- recipe(count ~ ., data = bike_train) %>% 
@@ -37,7 +36,7 @@ prep_train <- my_recipe %>%#set up processing using bike
 
 bake(my_recipe, new_data = bike_test)
 
-view(bike)
+view(prep_train)
 ?factor
 
 
