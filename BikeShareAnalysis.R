@@ -3,13 +3,15 @@ library(tidymodels)
 library(vroom)
 
 ## Read in the Data
-bike <- vroom("./train.csv")
-
+bike_test <- vroom("./test.csv")
+bike_train <- vroom("./train.csv")
+bike_train <- bike_train %>%
+  select(-c('casual','registered'))
 view(bike)
 dplyr::glimpse(bike)
 
 ## Create a "recipe"
-my_recipe <- recipe(count ~ atemp + season + weather + datetime + holiday + workingday + temp + humidity + windspeed + casual + registered, data = bike) %>%
+my_recipe <- recipe(count ~ ., data = bike_train) %>% 
   
   ## Feature Engineering Section
   ## make weather a factor
@@ -27,12 +29,13 @@ my_recipe <- recipe(count ~ atemp + season + weather + datetime + holiday + work
   ## get rid the one day with weather = 4
   step_filter(weather != 4) %>%
   ## get rid of registered and casual columns, unusable in prediction
-  step_select(-c("registered", "casual"))
+  prep()
 
 
-prepped_recipe <- prep(my_recipe) #set up processing using bike
+prep_train <- my_recipe %>%#set up processing using bike
+  juice()
 
-bake(prepped_recipe, new_data=new_bike)
+bake(my_recipe, new_data = bike_test)
 
 view(bike)
 ?factor
