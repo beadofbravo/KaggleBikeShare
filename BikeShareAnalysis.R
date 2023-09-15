@@ -1,6 +1,8 @@
 library(tidyverse)
 library(tidymodels)
 library(vroom)
+library(openxlsx)
+library(lubridate)
 
 ## Read in the Data
 bike_test <- vroom("./test.csv")
@@ -22,9 +24,9 @@ my_recipe <- recipe(count ~ ., data = bike_train) %>%
   ## make season a factor
   step_mutate(season=factor(season)) %>%
   ## remove zero variance predictors
-  step_zv(all_predictors())
+  step_zv(all_predictors()) %>%
   ## change weather of 4 into 3
-  
+  prep()
 
 
 prep_train <- my_recipe %>%#set up processing using bike
@@ -51,13 +53,19 @@ bike_workflow <- workflow() %>%
 bike_predict <- predict(bike_workflow, new_data=bike_test)
 view(bike_predict)
 
-df %>%
-  [,2] <- as.numeric([,2])
-  pmax([,2], 0)
+df <- data.frame(id = bike_test$datetime, bike_predict$.pred)
+colnames(df) <- c("datetime", "count") # change column names to fit format
+df_positive <- df
+df_positive[df_positive < 0] <- 0
+df_positive$datetime <- as.POSIXlt(df_positive$datetime)
+df_positive$datetime <- format(as.POSIXct(df_positive$datetime,
+                               format = "%m/%d/%Y %H:%M:%S"))
+dplyr::glimpse(df_positive)
+view(df_positive)
 
-view(df)
 
 ?vroom_write
-df <- data.frame(id = bike_test$datetime, bike_predict$.pred)
-view(df)
-vroom_write(x = df, file = "submission.csv")
+
+
+vroom_write(x = df_positive, file = "./submission.csv", delim = ',')
+
