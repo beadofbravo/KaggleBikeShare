@@ -3,6 +3,7 @@ library(tidymodels)
 library(vroom)
 library(openxlsx)
 library(lubridate)
+library(poissonreg)
 
 ## Read in the Data
 bike_test <- vroom("./test.csv")
@@ -26,6 +27,7 @@ my_recipe <- recipe(count ~ ., data = bike_train) %>%
   ## remove zero variance predictors
   step_zv(all_predictors()) %>%
   ## change weather of 4 into 3
+  
   prep()
 
 
@@ -63,9 +65,45 @@ df_positive$datetime <- format(as.POSIXct(df_positive$datetime,
 dplyr::glimpse(df_positive)
 view(df_positive)
 
-
-?vroom_write
+## looking at the fitted LM model
+extract_fit_engine(bike_workflow) %>%
+  summary()
+extract_fit_engine(bike_workflow) %>%
+  tidy()
 
 
 vroom_write(x = df_positive, file = "./submission.csv", delim = ',')
+
+## fitting a pois regression model
+
+pois_mod <- poisson_reg() %>%
+  set_engine("glm")
+
+bike_pois_workflow <- workflow() %>%
+  add_recipe(my_recipe) %>%
+  add_model(pois_mod) %>%
+  fit(data = bike_train)
+
+bike_pois_predictions <- predict(bike_pois_workflow, 
+                                 new_data = bike_test)
+view(bike_pois_predictions)
+## Get Predictions for test set AND format for Kaggle
+bike_pois_predictions <- bike_pois_predictions %>%
+  bind_cols(., bike_test) %>% #Bind predictions with test data
+  select(datetime, .pred) %>% #Just keep datetime and predictions
+  rename(count=.pred) %>% #rename pred to count (for submission to Kaggle)
+  mutate(count=pmax(0, count)) %>% #pointwise max of (0, prediction)
+  mutate(datetime=as.character(format(datetime))) #needed for right format to Kaggle
+
+
+## Write prediction file to CSV
+vroom_write(x=bike_pois_predictions, file="./submission2.csv", delim=",") 
+
+
+
+
+
+
+
+
 
