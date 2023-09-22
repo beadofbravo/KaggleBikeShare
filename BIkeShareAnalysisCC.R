@@ -30,6 +30,8 @@ my_recipe_pen <- recipe(count ~ ., data = bike_train_penreg) %>%
   step_rm(datetime) %>%
   ## make season a factor
   step_mutate(season=factor(season)) %>%
+  ## make hours a factor
+  step_mutate(datetime_hour = factor(datetime_hour)) %>%
   ## remove zero variance predictors
   step_zv(all_predictors()) %>%
   ## change character variables to dummy variables
@@ -39,8 +41,11 @@ my_recipe_pen <- recipe(count ~ ., data = bike_train_penreg) %>%
   
   prep()
 
+prep_train <- my_recipe_pen %>%#set up processing using bike
+  juice()
+
 ## set up the model
-penreg_model <- linear_reg(penalty = 0, mixture=0) %>%
+penreg_model <- linear_reg(penalty = 0, mixture=1) %>%
   set_engine("glmnet")
 
 ## workflow for penreg
