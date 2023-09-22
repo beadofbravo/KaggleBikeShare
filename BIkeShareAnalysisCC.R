@@ -18,7 +18,7 @@ my_recipe_pen <- recipe(count ~ ., data = bike_train_penreg) %>%
   ## make weather a factor
   step_mutate(weather=factor(weather)) %>%
   ## create hour and minutes variable
-  step_time(datetime, features = c("hour", "minute")) %>%
+  step_time(datetime, features = c("hour")) %>%
   ## get days of the week
   step_date(datetime, features = "dow") %>%
   ## make weekend variable for FRI, SAT, SUN
