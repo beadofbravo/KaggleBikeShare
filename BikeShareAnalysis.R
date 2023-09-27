@@ -5,6 +5,7 @@ library(openxlsx)
 library(lubridate)
 library(poissonreg)
 library(glmnet)
+library(rpart)
 ## Read in the Data
 bike_test <- vroom("./test.csv")
 bike_train <- vroom("./train.csv")
@@ -74,8 +75,9 @@ extract_fit_engine(bike_workflow) %>%
 
 vroom_write(x = df_positive, file = "./submission.csv", delim = ',')
 
-## fitting a pois regression model
-
+####################################
+## fitting a pois regression model##
+####################################
 pois_mod <- poisson_reg() %>%
   set_engine("glm")
 
@@ -102,8 +104,9 @@ vroom_write(x=bike_pois_predictions, file="./submission2.csv", delim=",")
 
 
 
-
-## Penalized Regression
+##########################
+## Penalized Regression ##
+##########################
 
 ## load in bike_train to fix for penalized regression
 bike_train_penreg <- vroom("./train.csv")
@@ -157,7 +160,10 @@ log_lin_preds <- predict(penreg_wf, new_data = bike_test) %>% #This predicts log
 vroom_write(x=log_lin_preds, file="./PenReg&loglinPreds.csv", delim=",")
 
 
-## cross validation tuning stuff
+###################################
+## cross validation tuning stuff ##
+###################################
+
 
 ## setting up data set
 bike_train <- vroom("./train.csv")
@@ -261,6 +267,57 @@ cv_preds <- cv_preds %>% #This predicts log(count)
   mutate(datetime=as.character(format(datetime))) #needed for right format to Kaggle
 ## Write predictions to CSV
 vroom_write(x=cv_preds, file="./cv_preds.csv", delim=",")
+
+
+
+
+######################
+## Regression Trees ##
+######################
+
+## read in data
+bike_train <- vroom("./train.csv")
+bike_train_logcount <- bike_train %>%
+  select(-c('casual','registered')) %>%
+  mutate(count = log(count))
+bike_test <- vroom("./test.csv")
+
+
+## Recipe
+
+my_recipe_pen <- recipe(count ~ ., data = bike_train_logcount) %>% 
+  
+  ## Feature Engineering Section
+  ## make weather a factor
+  step_mutate(weather=factor(weather)) %>%
+  ## create hour and minutes variable
+  step_time(datetime, features = c("hour")) %>%
+  ## get days of the week
+  step_date(datetime, features = "dow") %>%
+  ## make weekend variable for FRI, SAT, SUN
+  step_mutate(weekend = case_when(datetime_dow == "Fri" ~ 1,
+                                  datetime_dow == "Sat" ~ 1,
+                                  datetime_dow == "Sun" ~ 1,
+                                  TRUE ~ 0)) %>%
+  ## remove datetime
+  step_rm(datetime) %>%
+  ## make season a factor
+  step_mutate(season=factor(season)) %>%
+  ## make hours a factor
+  step_mutate(datetime_hour = factor(datetime_hour)) %>%
+  
+  prep()
+
+
+## set up the model for regression trees
+my_mod <- decision_tree(tree_depth = tune(),
+                        cost_complexity = tune(),
+                        min_n=tune()) %>% #Type of model
+  set_engine("rpart") %>% # Engine = What R function to use
+  set_mode("regression")
+
+
+
 
 
 
