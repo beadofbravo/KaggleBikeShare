@@ -12,12 +12,14 @@ bike_train_penreg <- bike_train %>%
   mutate(count = log(count))
 bike_test <- vroom("./test.csv")
 
+dplyr::glimpse(prep_train)
+
 my_recipe_pen <- recipe(count ~ ., data = bike_train_penreg) %>% 
   
   ## Feature Engineering Section
   ## make weather a factor
   step_mutate(weather=factor(weather)) %>%
-  ## create hour and minutes variable
+  ## create hour
   step_time(datetime, features = c("hour")) %>%
   ## get days of the week
   step_date(datetime, features = "dow") %>%
